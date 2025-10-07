@@ -60,6 +60,7 @@ ipython_config.py
 *.tflite
 *.onnx
 models.tar.gz
+deeplab_model/deeplabv3_pascal_trainval_2018_01_04.tar.gz
 
 # Data files (uncomment if you don't want to track data)
 # data/
