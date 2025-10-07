@@ -9,9 +9,16 @@ from __future__ import print_function
 import numpy as np
 import cv2
 
-from opendr.camera import ProjectPoints
-from opendr.renderer import ColoredRenderer
-from opendr.lighting import LambertianPointLight
+try:
+    from opendr.camera import ProjectPoints
+    from opendr.renderer import ColoredRenderer
+    from opendr.lighting import LambertianPointLight
+except ImportError:
+    # Use mock opendr if the real one is not available
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    from opendr_mock import ProjectPoints, ColoredRenderer, LambertianPointLight
 
 colors = {
     # colorbline/print/copy safe:
