@@ -15,19 +15,30 @@ RUN apt-get update && apt-get install -y \
     libgcc-s1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy API-specific requirements first for better caching
+COPY api/requirements.txt ./requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy API application code
+COPY api/. .
 
-# Copy the measurement model files from parent directory
-COPY ../models ./models
-COPY ../data ./data
-COPY ../sample_data ./sample_data
+# Ensure models directory exists even if no pretrained files are provided
+RUN mkdir -p ./models
+
+# Copy additional assets from the parent repository
+COPY data ./data
+COPY sample_data ./sample_data
+COPY demo.py ./demo.py
+COPY extract_measurements.py ./extract_measurements.py
+COPY functions.py ./functions.py
+COPY inference.py ./inference.py
+COPY networks.py ./networks.py
+COPY opendr_mock.py ./opendr_mock.py
+COPY utils.py ./utils.py
+COPY src ./src
+COPY commands ./commands
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app

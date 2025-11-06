@@ -1,15 +1,21 @@
 from fastapi import Request, HTTPException
-from slowapi import Limiter, _rate_limit_exceeded_handler
+import os
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
-from app.core.redis_client import redis_client
-import time
 
-# Create limiter instance
+# Determine storage backend. Default to in-memory to avoid requiring Redis in dev.
+_storage_uri = os.getenv("RATE_LIMIT_STORAGE_URI")
+if not _storage_uri:
+    if settings.redis_host and settings.redis_host.lower() not in {"memory", "none", ""}:
+        _storage_uri = f"redis://{settings.redis_host}:{settings.redis_port}/{settings.redis_db}"
+    else:
+        _storage_uri = "memory://"
+
 limiter = Limiter(
     key_func=get_remote_address,
-    storage_uri=f"redis://{settings.redis_host}:{settings.redis_port}/{settings.redis_db}",
+    storage_uri=_storage_uri,
     enabled=True
 )
 

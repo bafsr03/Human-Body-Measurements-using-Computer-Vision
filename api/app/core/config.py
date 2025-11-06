@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 from typing import Optional
 import os
 
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     
     # Redis Configuration
-    redis_host: str = "localhost"
+    redis_host: str = "memory"
     redis_port: int = 6379
     redis_db: int = 0
     redis_password: Optional[str] = None

@@ -1,21 +1,38 @@
-import redis
-from typing import Optional, Any
+import os
 import json
+from typing import Optional, Any
+
+import redis
+
 from app.core.config import settings
 from app.core.logging import logger
 
+
 class RedisClient:
     def __init__(self):
-        self.redis_client = redis.Redis(
-            host=settings.redis_host,
-            port=settings.redis_port,
-            db=settings.redis_db,
-            password=settings.redis_password,
-            decode_responses=True
-        )
+        host = settings.redis_host or "memory"
+        disabled_hosts = {"memory", "none", "", "disabled"}
+        self.enabled = host.lower() not in disabled_hosts
+        if self.enabled:
+            try:
+                self.redis_client = redis.Redis(
+                    host=host,
+                    port=settings.redis_port,
+                    db=settings.redis_db,
+                    password=settings.redis_password,
+                    decode_responses=True
+                )
+            except Exception as exc:
+                logger.error("Failed to initialize Redis client", host=host, error=str(exc))
+                self.enabled = False
+                self.redis_client = None
+        else:
+            self.redis_client = None
     
     async def get(self, key: str) -> Optional[Any]:
         """Get value from Redis"""
+        if not self.enabled or not self.redis_client:
+            return None
         try:
             value = self.redis_client.get(key)
             if value:
@@ -27,6 +44,8 @@ class RedisClient:
     
     async def set(self, key: str, value: Any, expire: Optional[int] = None) -> bool:
         """Set value in Redis with optional expiration"""
+        if not self.enabled or not self.redis_client:
+            return False
         try:
             serialized_value = json.dumps(value)
             result = self.redis_client.set(key, serialized_value, ex=expire)
@@ -37,6 +56,8 @@ class RedisClient:
     
     async def delete(self, key: str) -> bool:
         """Delete key from Redis"""
+        if not self.enabled or not self.redis_client:
+            return False
         try:
             result = self.redis_client.delete(key)
             return bool(result)
@@ -46,6 +67,8 @@ class RedisClient:
     
     async def exists(self, key: str) -> bool:
         """Check if key exists in Redis"""
+        if not self.enabled or not self.redis_client:
+            return False
         try:
             return bool(self.redis_client.exists(key))
         except Exception as e:

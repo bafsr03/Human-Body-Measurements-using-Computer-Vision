@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse
 import base64
 from app.schemas.measurement import MeasurementRequest, MeasurementResponse, ErrorResponse
@@ -22,6 +22,7 @@ router = APIRouter(prefix="/measurements", tags=["measurements"])
 )
 @rate_limit(requests=5, window=60)  # 5 requests per minute
 async def analyze_body_measurements(
+    request: Request,
     height: float = Form(..., gt=0, le=300, description="Height in centimeters"),
     image: UploadFile = File(..., description="Image file"),
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -89,7 +90,8 @@ async def analyze_body_measurements(
 )
 @rate_limit(requests=10, window=60)  # 10 requests per minute
 async def analyze_body_measurements_base64(
-    request: MeasurementRequest,
+    request: Request,
+    payload: MeasurementRequest,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
@@ -103,10 +105,10 @@ async def analyze_body_measurements_base64(
     try:
         logger.info("Processing base64 measurement request", 
                    username=current_user["username"],
-                   height=request.height)
+                   height=payload.height)
         
         # Get measurements
-        result = await measurement_service.get_measurements(request.height, request.image_data)
+        result = await measurement_service.get_measurements(payload.height, payload.image_data)
         
         if not result.get("success", False):
             raise HTTPException(
